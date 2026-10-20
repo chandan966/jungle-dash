@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101c19">
+  <title>Jungle Dash — Endless Runner</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101c19;
+      color: #fff8e7;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 50% 35%, #263d31 0%, #101c19 72%);
+    }
+
+    .game {
+      position: relative;
+      width: min(100vw, 1100px);
+      height: min(100vh, 760px);
+      min-height: 490px;
+      overflow: hidden;
+      isolation: isolate;
+      background: #17271f;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .topbar {
+      position: absolute;
+      z-index: 2;
+      top: 22px;
+      left: 24px;
+      right: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .brand {
+      color: #ffe6a3;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 12px #0008;
+    }
+
+    .stats { display: flex; gap: 10px; }
+
+    .stat {
+      min-width: 88px;
+      padding: 9px 13px;
+      border: 1px solid #fff3;
+      border-radius: 13px;
+      background: #102019b8;
+      text-align: right;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat-label {
+      display: block;
+      margin-bottom: 2px;
+      color: #c5d3bd;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .stat-value { color: #fff3cd; font-size: 19px; font-weight: 900; }
+
+    .overlay {
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: linear-gradient(180deg, #07110b22, #07110b9c);
+      text-align: center;
+    }
+
+    .card { width: min(100%, 450px); }
+
+    .eyebrow {
+      margin: 0 0 11px;
+      color: #f1c76e;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(44px, 8vw, 78px);
+      line-height: .91;
+      letter-spacing: -.07em;
+      text-shadow: 0 5px 24px #0008;
+    }
+
+    h1 span { color: #f7c957; }
+
+    .description {
+      max-width: 345px;
+      margin: 18px auto 22px;
+      color: #e6e6d4;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .start {
+      min-width: 190px;
+      padding: 14px 23px;
+      border: 0;
+      border-radius: 999px;
+      background: #f4c653;
+      color: #252316;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 7px 0 #bd8b32, 0 12px 30px #0005;
+      transition: transform .14s, box-shadow .14s;
+    }
+
+    .start:hover { transform: translateY(-2px); box-shadow: 0 9px 0 #bd8b32, 0 15px 32px #0006; }
+    .start:active { transform: translateY(4px); box-shadow: 0 3px 0 #bd8b32, 0 8px 22px #0005; }
+    .start:focus-visible, .touch-controls button:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+    .hidden { display: none; }
+
+    .help {
+      position: absolute;
+      z-index: 2;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f4eed7c9;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 2px 8px #000;
+      pointer-events: none;
+    }
+
+    .touch-controls {
+      position: absolute;
+      z-index: 4;
+      right: 16px;
+      bottom: 15px;
+      left: 16px;
+      display: none;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .touch-controls div { display: flex; gap: 8px; }
+
+    .touch-controls button {
+      width: 48px;
+      height: 48px;
+      border: 1px solid #fff6;
+      border-radius: 50%;
+      background: #14241fcc;
+      color: white;
+      font-size: 19px;
+      font-weight: 900;
+      touch-action: manipulation;
+      pointer-events: auto;
+    }
+
+    @media (pointer: coarse), (max-width: 650px) {
+      .touch-controls { display: flex; }
+      .topbar { top: 14px; left: 14px; right: 14px; }
+      .stat { min-width: 68px; padding: 7px 9px; }
+      .stat-value { font-size: 16px; }
+      .brand { font-size: 10px; }
+      .help { bottom: 72px; font-size: 10px; }
+    }
+
+    @media (max-height: 560px) {
+      .game { min-height: 0; }
+      .topbar { top: 12px; }
+      .description { margin: 12px auto 16px; }
+      .help { bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" aria-label="Jungle Dash endless runner game">
+    <canvas id="game" aria-label="Dodge obstacles and collect coins on the jungle trail"></canvas>
+    <header class="topbar">
+      <div class="brand">✦ Jungle Dash</div>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><span class="stat-label">Distance</span><span class="stat-value" id="score">0000</span></div>
+        <div class="stat"><span class="stat-label">Coins</span><span class="stat-value" id="coins">0</span></div>
+      </div>
+    </header>
+
+    <section class="overlay" id="overlay">
+      <div class="card">
+        <p class="eyebrow" id="eyebrow">The trail is calling</p>
+        <h1 id="title">JUNGLE<br><span>DASH</span></h1>
+        <p class="description" id="description">Run the ancient trail, dodge fallen logs, leap over rocks and grab every golden coin you can.</p>
+        <button class="start" id="start">Start running</button>
+      </div>
+    </section>
+
+    <div class="help" id="help">← → SWITCH LANES &nbsp; · &nbsp; ↑ JUMP &nbsp; · &nbsp; ↓ SLIDE</div>
+    <div class="touch-controls" aria-label="Touch controls">
+      <div><button data-action="left" aria-label="Move left">←</button><button data-action="right" aria-label="Move right">→</button></div>
+      <div><button data-action="jump" aria-label="Jump">↑</button><button data-action="slide" aria-label="Slide">↓</button></div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector("#game");
+      const ctx = canvas.getContext("2d");
+      const overlay = document.querySelector("#overlay");
+      const startButton = document.querySelector("#start");
+      const scoreDisplay = document.querySelector("#score");
+      const coinDisplay = document.querySelector("#coins");
+      const title = document.querySelector("#title");
+      const eyebrow = document.querySelector("#eyebrow");
+      const description = document.querySelector("#description");
+
+      let width = 0;
+      let height = 0;
+      let pixelRatio = 1;
+      let running = false;
+      let lastTime = 0;
+      let distance = 0;
+      let coins = 0;
+      let speed = 0.34;
+      let spawnTimer = 0;
+      let lane = 0;
+      let jumpTimer = 0;
+      let slideTimer = 0;
+      let flashTimer = 0;
+      let objects = [];
+      let sceneryOffset = 0;
+      let best = Number(localStorage.getItem("jungleDashBest") || 0);
+
+      const laneX = [-1, 0, 1];
+
+      function resize() {
+        const bounds = canvas.getBoundingClientRect();
+        width = bounds.width;
+        height = bounds.height;
+        pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * pixelRatio);
+        canvas.height = Math.round(height * pixelRatio);
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      }
+
+      function roundedRect(x, y, w, h, r, fill) {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        ctx.fill();
+      }
+
+      function drawTree(x, y, scale, side, phase) {
+        const sway = Math.sin(phase + side) * scale * 4;
+        ctx.save();
+        ctx.translate(x + sway, y);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#17251a";
+        ctx.fillRect(-5, -72, 10, 76);
+        ctx.fillStyle = "#183b2a";
+        ctx.beginPath();
+        ctx.moveTo(-36, -48);
+        ctx.lineTo(-8, -112);
+        ctx.lineTo(4, -66);
+        ctx.lineTo(36, -104);
+        ctx.lineTo(21, -47);
+        ctx.lineTo(44, -72);
+        ctx.lineTo(30, -28);
+        ctx.lineTo(-36, -26);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#28543a";
+        ctx.beginPath();
+        ctx.ellipse(-18, -79, 12, 31, -.5, 0, Math.PI * 2);
+        ctx.ellipse(20, -76, 12, 27, .6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBackground(time) {
+        const sky = ctx.createLinearGradient(0, 0, 0, height * .68);
+        sky.addColorStop(0, "#77a38a");
+        sky.addColorStop(.55, "#d6b77b");
+        sky.addColorStop(1, "#d18a51");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, width, height);
+
+        const sunX = width * .5;
+        const sunY = height * .31;
+        const sun = ctx.createRadialGradient(sunX, sunY, 4, sunX, sunY, height * .24);
+        sun.addColorStop(0, "#ffe5a3bb");
+        sun.addColorStop(1, "#ffe5a300");
+        ctx.fillStyle = sun;
+        ctx.fillRect(sunX - height * .24, sunY - height * .24, height * .48, height * .48);
+
+        ctx.fillStyle = "#45674d";
+        ctx.beginPath();
+        ctx.moveTo(0, height * .57);
+        ctx.quadraticCurveTo(width * .22, height * .36, width * .48, height * .55);
+        ctx.quadraticCurveTo(width * .72, height * .34, width, height * .56);
+        ctx.lineTo(width, height * .76);
+        ctx.lineTo(0, height * .76);
+        ctx.fill();
+
+        const horizon = height * .47;
+        for (let i = 0; i < 15; i++) {
+          const depth = (i + 1) / 15;
+          const y = horizon + depth * height * .48;
+          const spread = width * (.17 + depth * .48);
+          const x = i % 2 ? width * .16 : width * .84;
+          const scale = .25 + depth * 1.05;
+          drawTree(x - spread * .44, y, scale, i, time * .0005);
+          drawTree(x + spread * .44, y, scale * .76, i + 2, time * .0005);
+        }
+
+        const topY = height * .48;
+        const bottomY = height * 1.08;
+        const topW = width * .16;
+        const bottomW = width * .91;
+        ctx.fillStyle = "#96754b";
+        ctx.beginPath();
+        ctx.moveTo(width / 2 - topW, topY);
+        ctx.lineTo(width / 2 + topW, topY);
+        ctx.lineTo(width / 2 + bottomW, bottomY);
+        ctx.lineTo(width / 2 - bottomW, bottomY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#594b33";
+        ctx.beginPath();
+        ctx.moveTo(width / 2 - topW, topY);
+        ctx.lineTo(width / 2 - bottomW, bottomY);
+        ctx.lineTo(width / 2 - bottomW * .88, bottomY);
+        ctx.lineTo(width / 2 - topW * .78, topY);
+        ctx.moveTo(width / 2 + topW, topY);
+        ctx.lineTo(width / 2 + bottomW, bottomY);
+        ctx.lineTo(width / 2 + bottomW * .88, bottomY);
+        ctx.lineTo(width / 2 + topW * .78, topY);
+        ctx.fill();
+
+        const offset = (sceneryOffset % 1);
+        for (let i = 0; i < 11; i++) {
+          const progress = ((i / 11 + offset) % 1);
+          const y = topY + (bottomY - topY) * progress * progress;
+          const half = topW + (bottomW - topW) * progress * progress;
+          const markerH = 2 + progress * 9;
+          ctx.fillStyle = "#d7bb80";
+          for (const edge of [-1, 1]) {
+            const x = width / 2 + edge * half / 3;
+            ctx.fillRect(x - markerH / 2, y, markerH, markerH * 1.5);
+          }
+        }
+
+        ctx.fillStyle = "#14251a";
+        ctx.fillRect(0, 0, width, height * .2);
+        const canopy = ctx.createLinearGradient(0, 0, 0, height * .22);
+        canopy.addColorStop(0, "#10231b");
+        canopy.addColorStop(1, "#10231b00");
+        ctx.fillStyle = canopy;
+        ctx.fillRect(0, 0, width, height * .22);
+      }
+
+      function positionAt(laneNumber, depth) {
+        const progress = 1 - depth;
+        const perspective = progress * progress;
+        const center = width / 2 + laneX[laneNumber + 1] * width * (.09 + perspective * .29);
+        const y = height * (.48 + perspective * .58);
+        return { x: center, y, scale: .18 + perspective * 1.05 };
+      }
+
+      function drawCoin(x, y, scale, phase) {
+        const r = 11 * scale;
+        ctx.save();
+        ctx.translate(x, y + Math.sin(phase * 7) * 3 * scale);
+        ctx.scale(.75 + Math.abs(Math.sin(phase * 5)) * .25, 1);
+        ctx.fillStyle = "#ffe58a";
+        ctx.strokeStyle = "#d99532";
+        ctx.lineWidth = 3 * scale;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#d99532";
+        ctx.font = `900 ${r * 1.15}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("$", 0, 1 * scale);
+        ctx.restore();
+      }
+
+      function drawObject(object, time) {
+        const p = positionAt(object.lane, object.z);
+        const scale = p.scale;
+        if (object.type === "coin") {
+          drawCoin(p.x, p.y - 22 * scale, scale, time / 1000 + object.z);
+          return;
+        }
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.scale(scale, scale);
+        if (object.type === "log") {
+          roundedRect(-30, -41, 60, 34, 8, "#54331f");
+          ctx.fillStyle = "#98633c";
+          ctx.fillRect(-26, -35, 52, 7);
+          ctx.fillStyle = "#3e291d";
+          ctx.beginPath();
+          ctx.ellipse(-24, -24, 7, 14, 0, 0, Math.PI * 2);
+          ctx.ellipse(24, -24, 7, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (object.type === "branch") {
+          ctx.fillStyle = "#472c1e";
+          ctx.fillRect(-34, -57, 68, 11);
+          ctx.fillRect(-28, -57, 8, 24);
+          ctx.fillRect(20, -57, 8, 24);
+          ctx.fillStyle = "#28583b";
+          ctx.beginPath();
+          ctx.ellipse(-15, -61, 20, 8, -.25, 0, Math.PI * 2);
+          ctx.ellipse(16, -65, 22, 9, .2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = "#725e46";
+          ctx.beginPath();
+          ctx.moveTo(-26, -8);
+          ctx.lineTo(-20, -38);
+          ctx.lineTo(-5, -49);
+          ctx.lineTo(21, -43);
+          ctx.lineTo(29, -9);
+          ctx.quadraticCurveTo(0, 0, -26, -8);
+          ctx.fill();
+          ctx.fillStyle = "#9a8060";
+          ctx.beginPath();
+          ctx.ellipse(-6, -35, 8, 5, -.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawRunner(time) {
+        const p = positionAt(lane, .04);
+        const airborne = jumpTimer > 0;
+        const sliding = slideTimer > 0;
+        const lift = airborne ? Math.sin((1 - jumpTimer / .72) * Math.PI) * height * .17 : 0;
+        const x = p.x;
+        const y = p.y - lift;
+        const run = Math.sin(time * .018) * 9;
+        const bodyY = sliding ? y - 22 : y - 55;
+        const bodyHeight = sliding ? 26 : 39;
+        ctx.save();
+        ctx.globalAlpha = .27;
+        ctx.fillStyle = "#10150f";
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y - 5, 30, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(x, bodyY);
+        ctx.fillStyle = "#183b3b";
+        if (!sliding) {
+          ctx.strokeStyle = "#24302a";
+          ctx.lineWidth = 9;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(-8, 5);
+          ctx.lineTo(-11 + run * .45, 22);
+          ctx.lineTo(-13 - run, 36);
+          ctx.moveTo(8, 5);
+          ctx.lineTo(10 - run * .45, 22);
+          ctx.lineTo(13 + run, 36);
+          ctx.stroke();
+          ctx.fillStyle = "#cf7043";
+          ctx.fillRect(-20 - run, 32, 13, 6);
+          ctx.fillRect(10 + run, 32, 13, 6);
+          ctx.fillStyle = "#d95635";
+          ctx.beginPath();
+          ctx.ellipse(0, 6, 17, 23, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#e7bb83";
+          ctx.lineWidth = 7;
+          ctx.beginPath();
+          ctx.moveTo(-13, -1);
+          ctx.lineTo(-23 - run * .4, 15);
+          ctx.moveTo(13, -1);
+          ctx.lineTo(22 + run * .4, 13);
+          ctx.stroke();
+          ctx.fillStyle = "#e5b985";
+          ctx.beginPath();
+          ctx.arc(0, -20, 12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#39291f";
+          ctx.beginPath();
+          ctx.arc(0, -24, 12, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#f5d28d";
+          ctx.fillRect(-11, -27, 22, 4);
+        } else {
+          ctx.fillStyle = "#d95635";
+          ctx.beginPath();
+          ctx.ellipse(2, 5, 24, bodyHeight * .48, -.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#e5b985";
+          ctx.beginPath();
+          ctx.arc(20, -2, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#39291f";
+          ctx.fillRect(10, -12, 19, 5);
+          ctx.strokeStyle = "#24302a";
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(-10, 10);
+          ctx.lineTo(-27, 17);
+          ctx.moveTo(4, 10);
+          ctx.lineTo(24, 17);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function addPattern() {
+        const safeLane = Math.floor(Math.random() * 3) - 1;
+        const obstacleLane = Math.random() < .55 ? safeLane + (Math.random() < .5 ? -1 : 1) : Math.floor(Math.random() * 3) - 1;
+        const type = ["log", "branch", "rock"][Math.floor(Math.random() * 3)];
+        const obstacle = Math.max(-1, Math.min(1, obstacleLane));
+        objects.push({ type, lane: obstacle, z: 1 });
+        if (Math.random() < .7) {
+          const coinLane = obstacle === safeLane ? Math.max(-1, Math.min(1, obstacle + (obstacle === 1 ? -1 : 1))) : safeLane;
+          objects.push({ type: "coin", lane: coinLane, z: 1.08 });
+        }
+        if (distance > 650 && Math.random() < .35) {
+          const secondLane = [-1, 0, 1].find((value) => value !== obstacle && value !== safeLane);
+          objects.push({ type: "rock", lane: secondLane, z: 1.28 });
+        }
+      }
+
+      function begin() {
+        running = true;
+        distance = 0;
+        coins = 0;
+        speed = .34;
+        spawnTimer = .6;
+        lane = 0;
+        jumpTimer = 0;
+        slideTimer = 0;
+        flashTimer = 0;
+        objects = [];
+        lastTime = performance.now();
+        overlay.classList.add("hidden");
+        document.querySelector("#help").classList.remove("hidden");
+        scoreDisplay.textContent = "0000";
+        coinDisplay.textContent = "0";
+        requestAnimationFrame(frame);
+      }
+
+      function endGame() {
+        running = false;
+        const score = Math.floor(distance);
+        if (score > best) {
+          best = score;
+          localStorage.setItem("jungleDashBest", String(best));
+        }
+        eyebrow.textContent = "Run over · best " + best;
+        title.innerHTML = "NICE<br><span>RUN!</span>";
+        description.textContent = `You ran ${score} metres and collected ${coins} coins. Ready for another go?`;
+        startButton.textContent = "Run again";
+        overlay.classList.remove("hidden");
+      }
+
+      function move(action) {
+        if (!running) return;
+        if (action === "left") lane = Math.max(-1, lane - 1);
+        if (action === "right") lane = Math.min(1, lane + 1);
+        if (action === "jump" && jumpTimer <= 0 && slideTimer <= 0) jumpTimer = .72;
+        if (action === "slide" && jumpTimer <= 0) slideTimer = .58;
+      }
+
+      function update(dt) {
+        distance += dt * speed * 100;
+        speed = Math.min(.61, .34 + distance * .00012);
+        sceneryOffset += dt * speed;
+        spawnTimer -= dt;
+        if (spawnTimer <= 0) {
+          addPattern();
+          spawnTimer = Math.max(.68, 1.38 - distance * .0006) + Math.random() * .38;
+        }
+        jumpTimer = Math.max(0, jumpTimer - dt);
+        slideTimer = Math.max(0, slideTimer - dt);
+        flashTimer = Math.max(0, flashTimer - dt);
+
+        for (const object of objects) {
+          const previousZ = object.z;
+          object.z -= dt * speed;
+          if (object.type === "coin" && previousZ > .07 && object.z <= .07 && object.lane === lane) {
+            coins++;
+            coinDisplay.textContent = String(coins);
+            object.collected = true;
+          }
+          if (object.type !== "coin" && !object.checked && previousZ > .085 && object.z <= .085) {
+            object.checked = true;
+            if (object.lane === lane) {
+              const avoided = (object.type === "log" && jumpTimer > .08) || (object.type === "branch" && slideTimer > .08);
+              if (!avoided) {
+                endGame();
+                return;
+              }
+            }
+          }
+        }
+        objects = objects.filter((object) => object.z > -.12 && !object.collected);
+        scoreDisplay.textContent = String(Math.floor(distance)).padStart(4, "0");
+      }
+
+      function frame(time) {
+        if (!running) return;
+        const dt = Math.min((time - lastTime) / 1000, .05);
+        lastTime = time;
+        update(dt);
+        drawBackground(time);
+        objects.sort((a, b) => b.z - a.z).forEach((object) => drawObject(object, time));
+        drawRunner(time);
+        if (flashTimer > 0) {
+          ctx.fillStyle = `rgba(255, 72, 45, ${flashTimer * .18})`;
+          ctx.fillRect(0, 0, width, height);
+        }
+        if (running) requestAnimationFrame(frame);
+      }
+
+      startButton.addEventListener("click", begin);
+      window.addEventListener("resize", resize);
+      window.addEventListener("keydown", (event) => {
+        const keyMap = {
+          ArrowLeft: "left", a: "left", A: "left",
+          ArrowRight: "right", d: "right", D: "right",
+          ArrowUp: "jump", w: "jump", W: "jump", " ": "jump",
+          ArrowDown: "slide", s: "slide", S: "slide",
+        };
+        const action = keyMap[event.key];
+        if (action) {
+          event.preventDefault();
+          if (!running && (event.key === " " || event.key === "Enter")) begin();
+          else move(action);
+        } else if (!running && event.key === "Enter") {
+          begin();
+        }
+      });
+      document.querySelectorAll("[data-action]").forEach((button) => {
+        button.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          move(button.dataset.action);
+        });
+      });
+
+      resize();
+      drawBackground(0);
+      drawRunner(0);
+    })();
+  </script>
+</body>
+</html>
